@@ -8,19 +8,16 @@ import {
   useSensor,
   useSensors,
 } from "@dnd-kit/core";
-import {
-  useDroppable,
-} from "@dnd-kit/core";
-import {
-  useDraggable,
-} from "@dnd-kit/core";
+import { useDroppable } from "@dnd-kit/core";
+import { useDraggable } from "@dnd-kit/core";
 import ImageCompressor from "image-compressor.js";
 import { FiPaperclip, FiImage, FiX, FiChevronLeft, FiChevronRight, FiEdit2 } from "react-icons/fi";
 import { db } from "../../firebase";
 import { useAuth } from "../../context/AuthContext";
-import tasksData from './task.js';
+import tasksData from "./task.js";
 import {
   doc,
+  getDoc,
   serverTimestamp,
   onSnapshot,
   collection,
@@ -32,10 +29,10 @@ import {
   orderBy,
   limit,
   getDocs,
-  writeBatch
+  writeBatch,
 } from "firebase/firestore";
 import EditTaskModal from "./EditTaskModal";
-import ImportTasksModal from './ImportTasksModal';
+import ImportTasksModal from "./ImportTasksModal";
 
 const SkeletonLoader = ({ className }) => (
   <div className={`animate-pulse bg-gray-200 rounded ${className}`}></div>
@@ -193,16 +190,18 @@ const TaskCard = ({ task, getRoleDisplay, getRoleColor, handleDelete, moveTask, 
           e.preventDefault();
           setCurrentImageIndex((prev) => (prev > 0 ? prev - 1 : task.images.length - 1));
           break;
-        case 'ArrowRight':
+        case "ArrowRight":
           e.preventDefault();
-          setCurrentImageIndex((prev) => (prev < task.images.length - 1 ? prev + 1 : 0));
+          setCurrentImageIndex((prev) =>
+            prev < task.images.length - 1 ? prev + 1 : 0,
+          );
           break;
         case 'Escape':
           e.preventDefault();
           setShowImageModal(false);
           break;
-        case 'Delete':
-        case 'Backspace':
+        case "Delete":
+        case "Backspace":
           e.preventDefault();
           if (onImageDelete) {
             onImageDelete(task.id, currentImageIndex);
@@ -217,8 +216,8 @@ const TaskCard = ({ task, getRoleDisplay, getRoleColor, handleDelete, moveTask, 
     };
 
     if (showImageModal) {
-      document.addEventListener('keydown', handleKeyPress);
-      return () => document.removeEventListener('keydown', handleKeyPress);
+      document.addEventListener("keydown", handleKeyPress);
+      return () => document.removeEventListener("keydown", handleKeyPress);
     }
   }, [showImageModal, currentImageIndex, task.images, task.id, onImageDelete]);
 
@@ -239,10 +238,10 @@ const TaskCard = ({ task, getRoleDisplay, getRoleColor, handleDelete, moveTask, 
 
   const getStatusStyles = (status) => {
     switch (status) {
-      case 'completed':
-        return { opacity: 0.75, textDecoration: 'line-through' };
-      case 'cancelled':
-        return { opacity: 0.6, color: '#6B7280' };
+      case "completed":
+        return { opacity: 0.75, textDecoration: "line-through" };
+      case "cancelled":
+        return { opacity: 0.6, color: "#6B7280" };
       default:
         return {};
     }
@@ -253,24 +252,24 @@ const TaskCard = ({ task, getRoleDisplay, getRoleColor, handleDelete, moveTask, 
       <button
         onClick={() => onEditTask(task)}
         className="px-2 py-1 text-xs text-gray-800 rounded-full hover:opacity-80 transition-colors font-medium shadow-sm"
-        style={{ backgroundColor: '#E6E6FA' }}
+        style={{ backgroundColor: "#E6E6FA" }}
       >
         Edit
       </button>
     );
 
     switch (status) {
-      case 'not_started':
+      case "not_started":
         return (
           <div className="flex gap-2">
             <button
-              onClick={() => moveTask(task.id, 'in_progress')}
+              onClick={() => moveTask(task.id, "in_progress")}
               className="px-2 py-1 text-xs bg-blue-500 text-white rounded-full hover:bg-blue-600 transition-colors font-medium shadow-sm"
             >
               Start
             </button>
             <button
-              onClick={() => moveTask(task.id, 'cancelled')}
+              onClick={() => moveTask(task.id, "cancelled")}
               className="px-2 py-1 text-xs bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors font-medium shadow-sm"
             >
               Cancel
@@ -278,17 +277,17 @@ const TaskCard = ({ task, getRoleDisplay, getRoleColor, handleDelete, moveTask, 
             {editButton}
           </div>
         );
-      case 'in_progress':
+      case "in_progress":
         return (
           <div className="flex gap-2">
             <button
-              onClick={() => moveTask(task.id, 'completed')}
+              onClick={() => moveTask(task.id, "completed")}
               className="px-2 py-1 text-xs bg-green-500 text-white rounded-full hover:bg-green-600 transition-colors font-medium shadow-sm"
             >
               Complete
             </button>
             <button
-              onClick={() => moveTask(task.id, 'not_started')}
+              onClick={() => moveTask(task.id, "not_started")}
               className="px-2 py-1 text-xs bg-gray-500 text-white rounded-full hover:bg-gray-600 transition-colors font-medium shadow-sm"
             >
               Back
@@ -296,11 +295,11 @@ const TaskCard = ({ task, getRoleDisplay, getRoleColor, handleDelete, moveTask, 
             {editButton}
           </div>
         );
-      case 'completed':
+      case "completed":
         return (
           <div className="flex gap-2">
             <button
-              onClick={() => moveTask(task.id, 'in_progress')}
+              onClick={() => moveTask(task.id, "in_progress")}
               className="px-2 py-1 text-xs bg-blue-500 text-white rounded-full hover:bg-blue-600 transition-colors font-medium shadow-sm"
             >
               Reopen
@@ -314,11 +313,11 @@ const TaskCard = ({ task, getRoleDisplay, getRoleColor, handleDelete, moveTask, 
             {editButton}
           </div>
         );
-      case 'cancelled':
+      case "cancelled":
         return (
           <div className="flex gap-2">
             <button
-              onClick={() => moveTask(task.id, 'not_started')}
+              onClick={() => moveTask(task.id, "not_started")}
               className="px-2 py-1 text-xs bg-gray-500 text-white rounded-full hover:bg-gray-600 transition-colors font-medium shadow-sm"
             >
               Restore
@@ -343,7 +342,7 @@ const TaskCard = ({ task, getRoleDisplay, getRoleColor, handleDelete, moveTask, 
       style={style}
       {...(isDraggable ? listeners : {})}
       {...(isDraggable ? attributes : {})}
-      className={`bg-white p-1.5 rounded-2xl shadow-lg ${isDraggable ? 'cursor-grab active:cursor-grabbing' : 'cursor-default'} hover:shadow-xl transition-all duration-200 relative`}
+      className={`bg-white p-1.5 rounded-2xl shadow-lg ${isDraggable ? "cursor-grab active:cursor-grabbing" : "cursor-default"} hover:shadow-xl transition-all duration-200 relative`}
     >
       {task.images && task.images.length > 0 && (
         <div className="mb-0.5">
@@ -372,7 +371,9 @@ const TaskCard = ({ task, getRoleDisplay, getRoleColor, handleDelete, moveTask, 
                   />
                   {index === 3 && task.images.length > 4 && (
                     <div className="absolute inset-0 bg-black bg-opacity-50 rounded flex items-center justify-center">
-                      <span className="text-white font-bold text-xs">+{task.images.length - 4}</span>
+                      <span className="text-white font-bold text-xs">
+                        +{task.images.length - 4}
+                      </span>
                     </div>
                   )}
                 </div>
@@ -400,13 +401,21 @@ const TaskCard = ({ task, getRoleDisplay, getRoleColor, handleDelete, moveTask, 
             {task.images.length > 1 && (
               <>
                 <button
-                  onClick={() => setCurrentImageIndex((prev) => (prev > 0 ? prev - 1 : task.images.length - 1))}
+                  onClick={() =>
+                    setCurrentImageIndex((prev) =>
+                      prev > 0 ? prev - 1 : task.images.length - 1,
+                    )
+                  }
                   className="absolute left-4 top-1/2 transform -translate-y-1/2 text-white bg-black bg-opacity-50 rounded-full p-2 hover:bg-opacity-75 transition-colors"
                 >
                   <FiChevronLeft className="w-6 h-6" />
                 </button>
                 <button
-                  onClick={() => setCurrentImageIndex((prev) => (prev < task.images.length - 1 ? prev + 1 : 0))}
+                  onClick={() =>
+                    setCurrentImageIndex((prev) =>
+                      prev < task.images.length - 1 ? prev + 1 : 0,
+                    )
+                  }
                   className="absolute right-4 top-1/2 transform -translate-y-1/2 text-white bg-black bg-opacity-50 rounded-full p-2 hover:bg-opacity-75 transition-colors"
                 >
                   <FiChevronRight className="w-6 h-6" />
@@ -425,11 +434,15 @@ const TaskCard = ({ task, getRoleDisplay, getRoleColor, handleDelete, moveTask, 
       >
         {task.description || task.title}
       </h4>
-      <p className={`text-xs mb-0.5 ${task.status === 'cancelled' ? 'text-gray-500' : 'text-gray-600'}`}>
-        {task.assignedTo || 'Unassigned'}
+      <p
+        className={`text-xs mb-0.5 ${task.status === "cancelled" ? "text-gray-500" : "text-gray-600"}`}
+      >
+        {task.assignedTo || "Unassigned"}
       </p>
       {task.role && (
-        <div className={`inline-flex items-center px-1 py-0 rounded-full text-xs font-medium ${getRoleColor(task.role)} mb-0.5`}>
+        <div
+          className={`inline-flex items-center px-1 py-0 rounded-full text-xs font-medium ${getRoleColor(task.role)} mb-0.5`}
+        >
           👤 {getRoleDisplay(task.role)}
         </div>
       )}
@@ -444,16 +457,23 @@ const Column = ({ id, title, color, bgColor, tasks, children }) => {
   });
 
   return (
-    <div className={`${bgColor} rounded-2xl p-2 min-h-[200px] transition-colors shadow-sm`}>
+    <div
+      className={`${bgColor} rounded-2xl p-2 min-h-[200px] transition-colors shadow-sm`}
+    >
       <h3 className="font-semibold text-gray-900 mb-2 flex items-center text-sm">
         <div className={`w-3 h-3 ${color} rounded-full mr-3`}></div>
         {title}
-        <span className={`ml-auto text-xs px-2 py-1 rounded-full font-medium ${
-          color === 'bg-gray-400' ? 'bg-gray-200 text-gray-700' :
-          color === 'bg-blue-500' ? 'bg-blue-200 text-blue-700' :
-          color === 'bg-green-500' ? 'bg-green-200 text-green-700' :
-          'bg-red-200 text-red-700'
-        }`}>
+        <span
+          className={`ml-auto text-xs px-2 py-1 rounded-full font-medium ${
+            color === "bg-gray-400"
+              ? "bg-gray-200 text-gray-700"
+              : color === "bg-blue-500"
+                ? "bg-blue-200 text-blue-700"
+                : color === "bg-green-500"
+                  ? "bg-green-200 text-green-700"
+                  : "bg-red-200 text-red-700"
+          }`}
+        >
           {tasks.length}
         </span>
       </h3>
@@ -483,11 +503,23 @@ const parseDate = (dateStr) => {
   return null;
 };
 
-const CalendarView = ({ tasks, getRoleDisplay, getRoleColor, handleDelete, moveTask, onImageDelete, onEditTask, currentDate, onDateChange }) => {
+
+
+const CalendarView = ({
+  tasks,
+  getRoleDisplay,
+  getRoleColor,
+  handleDelete,
+  moveTask,
+  onImageDelete,
+  onEditTask,
+  currentDate,
+  onDateChange,
+}) => {
   const [selectedDate, setSelectedDate] = useState(null);
 
   const getTasksForDate = (date) => {
-    return tasks.filter(task => {
+    return tasks.filter((task) => {
       // If task has start and due dates, check if the date falls within the range
       if (task.startDate && task.dueDate) {
         const startDate = parseDate(task.startDate);
@@ -500,7 +532,9 @@ const CalendarView = ({ tasks, getRoleDisplay, getRoleColor, handleDelete, moveT
       if (task.dueDate) {
         taskDate = parseDate(task.dueDate);
       } else if (task.createdAt) {
-        taskDate = task.createdAt?.toDate ? task.createdAt.toDate() : new Date(task.createdAt);
+        taskDate = task.createdAt?.toDate
+          ? task.createdAt.toDate()
+          : new Date(task.createdAt);
       }
       return taskDate && taskDate.toDateString() === date.toDateString();
     });
@@ -530,10 +564,10 @@ const CalendarView = ({ tasks, getRoleDisplay, getRoleColor, handleDelete, moveT
   };
 
   const formatMonthYear = (date) => {
-    return date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+    return date.toLocaleDateString("en-US", { month: "long", year: "numeric" });
   };
 
-  const daysOfWeek = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  const daysOfWeek = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
   const days = getDaysInMonth(currentDate);
 
   return (
@@ -559,8 +593,11 @@ const CalendarView = ({ tasks, getRoleDisplay, getRoleColor, handleDelete, moveT
 
       {/* Days of Week Header */}
       <div className="grid grid-cols-7 gap-1 mb-2">
-        {daysOfWeek.map(day => (
-          <div key={day} className="p-2 text-center text-sm font-medium text-gray-600">
+        {daysOfWeek.map((day) => (
+          <div
+            key={day}
+            className="p-2 text-center text-sm font-medium text-gray-600"
+          >
             {day}
           </div>
         ))}
@@ -570,12 +607,15 @@ const CalendarView = ({ tasks, getRoleDisplay, getRoleColor, handleDelete, moveT
       <div className="grid grid-cols-7 gap-1">
         {days.map((date, index) => {
           if (!date) {
-            return <div key={index} className="p-3 bg-gray-50 rounded-xl"></div>;
+            return (
+              <div key={index} className="p-3 bg-gray-50 rounded-xl"></div>
+            );
           }
 
           const dayTasks = getTasksForDate(date);
           const isToday = date.toDateString() === new Date().toDateString();
-          const isSelected = selectedDate && date.toDateString() === selectedDate.toDateString();
+          const isSelected =
+            selectedDate && date.toDateString() === selectedDate.toDateString();
 
           return (
             <div
@@ -651,7 +691,14 @@ const CalendarView = ({ tasks, getRoleDisplay, getRoleColor, handleDelete, moveT
   );
 };
 
-const TableView = ({ tasks, getRoleDisplay, getRoleColor, handleDelete, moveTask, onEditTask }) => {
+const TableView = ({
+  tasks,
+  getRoleDisplay,
+  getRoleColor,
+  handleDelete,
+  moveTask,
+  onEditTask,
+}) => {
   const getStatusBadge = (status) => {
     switch (status) {
       case 'not_started':
@@ -663,28 +710,15 @@ const TableView = ({ tasks, getRoleDisplay, getRoleColor, handleDelete, moveTask
       case 'cancelled':
         return <span className="px-3 py-1.5 text-xs bg-red-100 text-red-700 rounded-full font-semibold shadow-sm whitespace-nowrap">On hold</span>;
       default:
-        return <span className="px-3 py-1.5 text-xs bg-gray-100 text-gray-700 rounded-full font-semibold shadow-sm whitespace-nowrap">{status}</span>;
+        return (
+          <span className="px-3 py-1.5 text-xs bg-gray-100 text-gray-700 rounded-full font-semibold shadow-sm whitespace-nowrap">
+            {status}
+          </span>
+        );
     }
   };
 
-  const parseDate = (dateStr) => {
-    if (!dateStr) return null;
-    if (dateStr instanceof Date) return dateStr;
-    if (dateStr.toDate) return dateStr.toDate();
-    if (typeof dateStr === 'string') {
-      const parts = dateStr.split('-');
-      if (parts.length === 3) {
-        const [p1, p2, p3] = parts.map(Number);
-        if (p1 > 31) { // YYYY-MM-DD
-          return new Date(p1, p2 - 1, p3);
-        } else if (p3 > 31) { // DD-MM-YYYY
-          return new Date(p3, p2 - 1, p1);
-        }
-      }
-      return new Date(dateStr);
-    }
-    return null;
-  };
+
 
   const formatDate = (dateString) => {
     const date = parseDate(dateString);
@@ -701,20 +735,43 @@ const TableView = ({ tasks, getRoleDisplay, getRoleColor, handleDelete, moveTask
         <table className="w-full">
           <thead className="bg-gray-50/50 border-b border-gray-100">
             <tr>
-              <th className="px-2 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">ID</th>
-              <th className="px-2 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider min-w-[250px]">Task</th>
-              <th className="px-2 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Assigned To</th>
-              <th className="px-4 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider w-10">Role</th>
-              <th className="px-2 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Status</th>
-              <th className="px-2 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Start Date</th>
-              <th className="px-2 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Due Date</th>
-              <th className="px-2 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Actions</th>
+              <th className="px-2 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                ID
+              </th>
+              <th className="px-2 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider min-w-[250px]">
+                Task
+              </th>
+              <th className="px-2 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                Assigned To
+              </th>
+              <th className="px-4 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider w-10">
+                Role
+              </th>
+              <th className="px-2 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                Status
+              </th>
+              <th className="px-2 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                Start Date
+              </th>
+              <th className="px-2 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                Due Date
+              </th>
+              <th className="px-2 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                Actions
+              </th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
             {tasks.map((task) => (
-              <tr key={task.id} className="hover:bg-gray-50/30 transition-colors duration-150">
-                <td className="px-2 py-4 text-sm text-gray-900 font-medium">{task.id && !isNaN(parseInt(task.id.replace('dmtask', ''))) ? parseInt(task.id.replace('dmtask', '')) : "-"}</td>
+              <tr
+                key={task.id}
+                className="hover:bg-gray-50/30 transition-colors duration-150"
+              >
+                <td className="px-2 py-4 text-sm text-gray-900 font-medium">
+                  {task.id && !isNaN(parseInt(task.id.replace("dmtask", "")))
+                    ? parseInt(task.id.replace("dmtask", ""))
+                    : "-"}
+                </td>
                 <td className="px-2 py-4 min-w-[250px]">
                   <div className="flex items-center">
                     {task.images && task.images.length > 0 && (
@@ -727,28 +784,33 @@ const TableView = ({ tasks, getRoleDisplay, getRoleColor, handleDelete, moveTask
                       </div>
                     )}
                     <div className="min-w-0 flex-1">
-                      <div className="text-sm font-medium text-gray-900 wrap-break-word" title={task.description || task.title}>
+                      <div
+                        className="text-sm font-medium text-gray-900 wrap-break-word"
+                        title={task.description || task.title}
+                      >
                         {task.description || task.title}
                       </div>
                       {task.images && task.images.length > 1 && (
-                        <div className="text-xs text-gray-500 mt-1">+{task.images.length - 1} more images</div>
+                        <div className="text-xs text-gray-500 mt-1">
+                          +{task.images.length - 1} more images
+                        </div>
                       )}
                     </div>
                   </div>
                 </td>
                 <td className="px-2 py-4 text-sm text-gray-900 font-medium">
-                  {task.assignedTo || 'Unassigned'}
+                  {task.assignedTo || "Unassigned"}
                 </td>
                 <td className="px-4 py-4 w-10">
                   {task.role && (
-                    <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold ${getRoleColor(task.role)} shadow-sm`}>
+                    <span
+                      className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold ${getRoleColor(task.role)} shadow-sm`}
+                    >
                       {getRoleDisplay(task.role)}
                     </span>
                   )}
                 </td>
-                <td className="px-2 py-4">
-                  {getStatusBadge(task.status)}
-                </td>
+                <td className="px-2 py-4">{getStatusBadge(task.status)}</td>
                 <td className="px-2 py-4 text-sm text-gray-900 font-medium whitespace-nowrap">
                   {formatDate(task.startDate)}
                 </td>
@@ -763,33 +825,34 @@ const TableView = ({ tasks, getRoleDisplay, getRoleColor, handleDelete, moveTask
                     >
                       Edit
                     </button>
-                    
+
                     {/* Status change buttons */}
-                    {task.status === 'not_started' && (
+                    {task.status === "not_started" && (
                       <button
-                        onClick={() => moveTask(task.id, 'in_progress')}
+                        onClick={() => moveTask(task.id, "in_progress")}
                         className="px-2 py-1 text-xs bg-blue-500 text-white rounded-full hover:bg-blue-600 transition-colors font-semibold shadow-sm"
                       >
                         Start
                       </button>
                     )}
-                    {task.status === 'in_progress' && (
+                    {task.status === "in_progress" && (
                       <button
-                        onClick={() => moveTask(task.id, 'completed')}
+                        onClick={() => moveTask(task.id, "completed")}
                         className="px-2 py-1 text-xs bg-green-500 text-white rounded-full hover:bg-green-600 transition-colors font-semibold shadow-sm"
                       >
                         Complete
                       </button>
                     )}
-                    {(task.status === 'completed' || task.status === 'cancelled') && (
+                    {(task.status === "completed" ||
+                      task.status === "cancelled") && (
                       <button
-                        onClick={() => moveTask(task.id, 'in_progress')}
+                        onClick={() => moveTask(task.id, "in_progress")}
                         className="px-2 py-1 text-xs bg-blue-500 text-white rounded-full hover:bg-blue-600 transition-colors font-semibold shadow-sm"
                       >
                         Reopen
                       </button>
                     )}
-                    
+
                     <button
                       onClick={() => handleDelete(task.id)}
                       className="px-2 py-1 text-xs bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors font-semibold shadow-sm"
@@ -802,9 +865,14 @@ const TableView = ({ tasks, getRoleDisplay, getRoleColor, handleDelete, moveTask
             ))}
             {tasks.length === 0 && (
               <tr>
-                <td colSpan="8" className="px-2 py-12 text-center text-gray-500">
+                <td
+                  colSpan="8"
+                  className="px-2 py-12 text-center text-gray-500"
+                >
                   <div className="text-sm font-medium">No tasks found</div>
-                  <div className="text-xs text-gray-400 mt-1">Create your first task to get started</div>
+                  <div className="text-xs text-gray-400 mt-1">
+                    Create your first task to get started
+                  </div>
                 </td>
               </tr>
             )}
@@ -836,10 +904,13 @@ const TaskManager = ({ onBack }) => {
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const { user } = useAuth();
   const [filters, setFilters] = useState({
-    user: (user?.role === 'Director' || user?.role === 'Head') ? '' : (user?.displayName || ''),
-    startDate: '',
-    endDate: '',
-    role: ''
+    user:
+      user?.role === "Director" || user?.role === "Head"
+        ? ""
+        : user?.displayName || "",
+    startDate: "",
+    endDate: "",
+    role: "",
   });
   const initialLoadRef = useRef(true);
   const fileInputRef = useRef(null);
@@ -866,11 +937,11 @@ const TaskManager = ({ onBack }) => {
   const [calendarCurrentDate, setCalendarCurrentDate] = useState(new Date());
 
   const roleAbbreviations = {
-    'Video Editor': 'VE',
-    'Graphic Designer': 'GD',
-    'Manager': 'MG',
-    'Developer': 'DEV',
-    'Content Writer': 'CW',
+    "Video Editor": "VE",
+    "Graphic Designer": "GD",
+    Manager: "MG",
+    Developer: "DEV",
+    "Content Writer": "CW",
   };
 
   const getNextTaskId = async () => {
@@ -879,20 +950,39 @@ const TaskManager = ({ onBack }) => {
       const counterDoc = await transaction.get(counterRef);
       const nextId = counterDoc.exists() ? counterDoc.data().next_id : 1;
       transaction.set(counterRef, { next_id: nextId + 1 }, { merge: true });
-      return `dmtask${nextId.toString().padStart(4, '0')}`;
+      return `dmtask${nextId.toString().padStart(4, "0")}`;
     });
   };
 
-  const uniqueTasksList = [...new Set(tasksData.map(item => item.task))];
+  const uniqueTasksList = [...new Set(tasksData.map((item) => item.task))];
   const typingTasks = uniqueTasksList.slice(0, 5);
-  const [placeholderText, setPlaceholderText] = useState('');
+  const [placeholderText, setPlaceholderText] = useState("");
   const [currentTaskIndex, setCurrentTaskIndex] = useState(0);
   const [isDeleting, setIsDeleting] = useState(false);
   const [charIndex, setCharIndex] = useState(0);
 
-  const uniqueAccounts = [...new Set(tasksData.map(item => item.account))];
-  const rolesForAccount = selectedAccount ? [...new Set(tasksData.filter(item => item.account === selectedAccount).map(item => item.role))] : [];
-  const tasksForRole = selectedRole ? [...new Set(tasksData.filter(item => item.account === selectedAccount && item.role === selectedRole).map(item => item.task))] : [];
+  const uniqueAccounts = [...new Set(tasksData.map((item) => item.account))];
+  const rolesForAccount = selectedAccount
+    ? [
+        ...new Set(
+          tasksData
+            .filter((item) => item.account === selectedAccount)
+            .map((item) => item.role),
+        ),
+      ]
+    : [];
+  const tasksForRole = selectedRole
+    ? [
+        ...new Set(
+          tasksData
+            .filter(
+              (item) =>
+                item.account === selectedAccount && item.role === selectedRole,
+            )
+            .map((item) => item.task),
+        ),
+      ]
+    : [];
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -900,7 +990,7 @@ const TaskManager = ({ onBack }) => {
         distance: 8,
       },
     }),
-    useSensor(KeyboardSensor)
+    useSensor(KeyboardSensor),
   );
 
   useEffect(() => {
@@ -910,138 +1000,179 @@ const TaskManager = ({ onBack }) => {
     }
 
     // Load cached assignees
-    const cachedAssignees = localStorage.getItem('dmAssignees');
+    const cachedAssignees = localStorage.getItem("dmAssignees");
     if (cachedAssignees) {
       const parsedAssignees = JSON.parse(cachedAssignees);
       setAssignees(parsedAssignees);
       // Set default filter based on user preference
-      const filterPreference = localStorage.getItem('dmFilterPreference') || 'user';
+      const filterPreference =
+        localStorage.getItem("dmFilterPreference") || "user";
       const userName = user?.displayName;
-      if (filterPreference === 'user' && userName && parsedAssignees.includes(userName) && user?.role !== 'Director' && user?.role !== 'Head') {
-        setFilters(prev => ({ ...prev, user: userName }));
+      if (
+        filterPreference === "user" &&
+        userName &&
+        parsedAssignees.includes(userName) &&
+        user?.role !== "Director" &&
+        user?.role !== "Head"
+      ) {
+        setFilters((prev) => ({ ...prev, user: userName }));
       }
     }
 
     // Set up limited real-time listener for tasks
     const calendarLimit = currentView === "calendar" ? 500 : currentLimit;
-    const queryLimit = loadingMore && currentView !== "calendar" ? currentLimit + 1 : calendarLimit;
-    const tasksQuery = query(collection(db, "marketing_tasks"), orderBy("createdAt", "desc"), limit(queryLimit));
-    const unsubscribeTasks = onSnapshot(tasksQuery, (snapshot) => {
-      const tasksData = snapshot.docs.map(docSnap => {
-        const data = docSnap.data();
-        return {
-          id: docSnap.id,
-          ...data,
-          // Migrate old imageUrl format to new images array format if needed
-          images: data.images || (data.imageUrl ? [data.imageUrl] : []),
-        };
-      });
-      const previousFilteredLength = filteredTasks.length;
-      setTasks(tasksData);
-      if (initialLoadRef.current) {
-        setIsLoading(false);
-        initialLoadRef.current = false;
-      }
-      if (loadingMore) {
-        // Clear the timeout since we loaded
-        if (loadMoreTimeoutRef.current) {
-          clearTimeout(loadMoreTimeoutRef.current);
-          loadMoreTimeoutRef.current = null;
-        }
-        setLoadingMore(false);
-        
-        // Calculate how many new tasks are visible after filtering
-        const newFilteredTasks = tasksData.filter(task => {
-          if (filters.user && task.assignedTo !== filters.user) return false;
-          if (filters.role && task.role !== filters.role) return false;
-          if (filters.startDate && task.startDate) {
-            const taskStart = parseDate(task.startDate);
-            const filterStart = new Date(filters.startDate);
-            if (taskStart && taskStart < filterStart) return false;
-          }
-          if (filters.endDate && task.dueDate) {
-            const taskEnd = parseDate(task.dueDate);
-            const filterEnd = new Date(filters.endDate);
-            if (taskEnd && taskEnd > filterEnd) return false;
-          }
-          // Week filter
-          const weekStart = new Date(currentWeek);
-          const weekEnd = new Date(weekStart);
-          weekEnd.setDate(weekStart.getDate() + 6);
-          weekEnd.setHours(23, 59, 59, 999);
-          let taskDate = null;
-          if (task.dueDate) {
-            taskDate = parseDate(task.dueDate);
-          } else if (task.createdAt) {
-            taskDate = task.createdAt?.toDate ? task.createdAt.toDate() : new Date(task.createdAt);
-          }
-          if (taskDate && (taskDate < weekStart || taskDate > weekEnd)) return false;
-          return true;
+    const tasksQuery = query(
+      collection(db, "marketing_tasks"),
+      orderBy("createdAt", "desc"),
+      limit(calendarLimit),
+    );
+    const unsubscribeTasks = onSnapshot(
+      tasksQuery,
+      (snapshot) => {
+        const tasksData = snapshot.docs.map((docSnap) => {
+          const data = docSnap.data();
+          return {
+            id: docSnap.id,
+            ...data,
+            // Migrate old imageUrl format to new images array format if needed
+            images: data.images || (data.imageUrl ? [data.imageUrl] : []),
+          };
         });
-        
-        const newVisibleTasksCount = newFilteredTasks.length - previousFilteredLength;
-        
-        const message = newVisibleTasksCount > 0 
-          ? `${newVisibleTasksCount} tasks fetched.` 
-          : `Tasks loaded.`;
-        
-        setToastMessage(message);
-        setShowToast(true);
-        setTimeout(() => setShowToast(false), 3000);
-        
-        if (tasksData.length > currentLimit) {
-          setNoMoreTasks(false);
-        } else {
-          setNoMoreTasks(true);
-          const newCount = noMoreCount + 1;
-          setNoMoreCount(newCount);
-          if (newCount >= 4) {
-            setButtonDisabled(true);
-            setCountdown(10);
+        const previousLength = tasks.length;
+        const previousFilteredLength = filteredTasks.length;
+        setTasks(tasksData);
+        if (initialLoadRef.current) {
+          setIsLoading(false);
+          initialLoadRef.current = false;
+        }
+        if (loadingMore) {
+          const newTasksCount = tasksData.length - previousLength;
+
+          // Only process when we actually have new tasks loaded
+          if (newTasksCount > 0) {
+            // Clear the timeout since tasks were loaded
+            if (loadMoreTimeoutRef.current) {
+              clearTimeout(loadMoreTimeoutRef.current);
+              loadMoreTimeoutRef.current = null;
+            }
+            setLoadingMore(false);
+
+            // Calculate how many new tasks are visible after filtering
+            const newFilteredTasks = tasksData.filter((task) => {
+              if (filters.user && task.assignedTo !== filters.user)
+                return false;
+              if (filters.role && task.role !== filters.role) return false;
+              if (filters.startDate && task.startDate) {
+                const taskStart = new Date(task.startDate);
+                const filterStart = new Date(filters.startDate);
+                if (taskStart < filterStart) return false;
+              }
+              if (filters.endDate && task.dueDate) {
+                const taskEnd = new Date(task.dueDate);
+                const filterEnd = new Date(filters.endDate);
+                if (taskEnd > filterEnd) return false;
+              }
+              // Week filter
+              const weekStart = new Date(currentWeek);
+              const weekEnd = new Date(weekStart);
+              weekEnd.setDate(weekStart.getDate() + 6);
+              weekEnd.setHours(23, 59, 59, 999);
+              let taskDate = null;
+              if (task.dueDate) {
+                taskDate = new Date(task.dueDate);
+              } else if (task.createdAt) {
+                taskDate = task.createdAt?.toDate
+                  ? task.createdAt.toDate()
+                  : new Date(task.createdAt);
+              }
+              if (taskDate && (taskDate < weekStart || taskDate > weekEnd))
+                return false;
+              return true;
+            });
+
+            const newVisibleTasksCount =
+              newFilteredTasks.length - previousFilteredLength;
+
+            const message =
+              newVisibleTasksCount > 0
+                ? `${newVisibleTasksCount} tasks fetched.`
+                : `${newTasksCount} tasks loaded (${newTasksCount - newVisibleTasksCount} filtered out).`;
+
+            setToastMessage(message);
+            setShowToast(true);
+            setTimeout(() => setShowToast(false), 3000);
+            setNoMoreTasks(false);
+            setNoMoreCount(0);
+          } else if (tasksData.length >= currentLimit) {
+            // If we reached the limit but no new tasks, it means no more tasks available
+            // Clear the timeout since we determined no more tasks
+            if (loadMoreTimeoutRef.current) {
+              clearTimeout(loadMoreTimeoutRef.current);
+              loadMoreTimeoutRef.current = null;
+            }
+            setLoadingMore(false);
+            setNoMoreTasks(true);
+            const newCount = noMoreCount + 1;
+            setNoMoreCount(newCount);
+            if (newCount >= 4) {
+              setButtonDisabled(true);
+              setCountdown(10);
+            }
           }
+          // If newTasksCount === 0 and tasksData.length < currentLimit,
+          // it means the data is still loading, so we don't do anything yet
         }
-      }
-    }, (error) => {
-      console.error("Error loading tasks from Firestore:", error);
-      setTasks([]);
-      setIsLoading(false);
-      if (loadingMore) {
-        // Clear the timeout on error
-        if (loadMoreTimeoutRef.current) {
-          clearTimeout(loadMoreTimeoutRef.current);
-          loadMoreTimeoutRef.current = null;
+      },
+      (error) => {
+        console.error("Error loading tasks from Firestore:", error);
+        setTasks([]);
+        setIsLoading(false);
+        if (loadingMore) {
+          // Clear the timeout on error
+          if (loadMoreTimeoutRef.current) {
+            clearTimeout(loadMoreTimeoutRef.current);
+            loadMoreTimeoutRef.current = null;
+          }
+          setLoadingMore(false);
         }
-        setLoadingMore(false);
-      }
-    });
+      },
+    );
 
     // Fetch users once and cache
     const fetchUsers = async () => {
       try {
         const usersSnapshot = await getDocs(collection(db, "users"));
         const dmUsers = usersSnapshot.docs
-          .map(doc => ({ id: doc.id, ...doc.data() }))
-          .filter(user => {
+          .map((doc) => ({ id: doc.id, ...doc.data() }))
+          .filter((user) => {
             const hasDM = user.departments && user.departments.includes("DM");
-            const hasAdminDept = user.departments && user.departments.includes("Admin");
+            const hasAdminDept =
+              user.departments && user.departments.includes("Admin");
             return hasDM || hasAdminDept;
           })
-          .map(user => user.displayName || user.name || user.email)
+          .map((user) => user.displayName || user.name || user.email)
           .filter(Boolean);
         setAssignees(dmUsers);
-        localStorage.setItem('dmAssignees', JSON.stringify(dmUsers));
+        localStorage.setItem("dmAssignees", JSON.stringify(dmUsers));
         // Set default filter based on user preference
-        const filterPreference = localStorage.getItem('dmFilterPreference') || 'user';
+        const filterPreference =
+          localStorage.getItem("dmFilterPreference") || "user";
         const userName = user?.displayName;
-        if (filterPreference === 'user' && userName && dmUsers.includes(userName) && user?.role !== 'Director' && user?.role !== 'Head') {
-          setFilters(prev => ({ ...prev, user: userName }));
+        if (
+          filterPreference === "user" &&
+          userName &&
+          dmUsers.includes(userName) &&
+          user?.role !== "Director" &&
+          user?.role !== "Head"
+        ) {
+          setFilters((prev) => ({ ...prev, user: userName }));
         }
       } catch (error) {
         console.error("Error loading users:", error);
       }
     };
 
-    if (!cachedAssignees || JSON.parse(cachedAssignees || '[]').length === 0) {
+    if (!cachedAssignees || JSON.parse(cachedAssignees || "[]").length === 0) {
       fetchUsers();
     }
 
@@ -1062,22 +1193,25 @@ const TaskManager = ({ onBack }) => {
   useEffect(() => {
     const currentTask = typingTasks[currentTaskIndex];
     if (!currentTask) return;
-    const timeout = setTimeout(() => {
-      if (!isDeleting) {
-        setPlaceholderText(currentTask.substring(0, charIndex + 1));
-        setCharIndex(charIndex + 1);
-        if (charIndex + 1 === currentTask.length) {
-          setTimeout(() => setIsDeleting(true), 1000); // pause before deleting
+    const timeout = setTimeout(
+      () => {
+        if (!isDeleting) {
+          setPlaceholderText(currentTask.substring(0, charIndex + 1));
+          setCharIndex(charIndex + 1);
+          if (charIndex + 1 === currentTask.length) {
+            setTimeout(() => setIsDeleting(true), 1000); // pause before deleting
+          }
+        } else {
+          setPlaceholderText(currentTask.substring(0, charIndex - 1));
+          setCharIndex(charIndex - 1);
+          if (charIndex - 1 === 0) {
+            setIsDeleting(false);
+            setCurrentTaskIndex((currentTaskIndex + 1) % typingTasks.length);
+          }
         }
-      } else {
-        setPlaceholderText(currentTask.substring(0, charIndex - 1));
-        setCharIndex(charIndex - 1);
-        if (charIndex - 1 === 0) {
-          setIsDeleting(false);
-          setCurrentTaskIndex((currentTaskIndex + 1) % typingTasks.length);
-        }
-      }
-    }, isDeleting ? 50 : 100); // faster deleting
+      },
+      isDeleting ? 50 : 100,
+    ); // faster deleting
     return () => clearTimeout(timeout);
   }, [charIndex, isDeleting, currentTaskIndex, typingTasks]);
 
@@ -1090,10 +1224,8 @@ const TaskManager = ({ onBack }) => {
     };
   }, []);
 
-
-
   const goToPreviousWeek = () => {
-    setCurrentWeek(prev => {
+    setCurrentWeek((prev) => {
       const newWeek = new Date(prev);
       newWeek.setDate(prev.getDate() - 7);
       return newWeek;
@@ -1101,7 +1233,7 @@ const TaskManager = ({ onBack }) => {
   };
 
   const goToNextWeek = () => {
-    setCurrentWeek(prev => {
+    setCurrentWeek((prev) => {
       const newWeek = new Date(prev);
       newWeek.setDate(prev.getDate() + 7);
       return newWeek;
@@ -1109,7 +1241,7 @@ const TaskManager = ({ onBack }) => {
   };
 
   const goToNextMonth = () => {
-    setCalendarCurrentDate(prevDate => {
+    setCalendarCurrentDate((prevDate) => {
       const newDate = new Date(prevDate);
       newDate.setMonth(newDate.getMonth() + 1);
       return newDate;
@@ -1117,7 +1249,7 @@ const TaskManager = ({ onBack }) => {
   };
 
   const goToPreviousMonth = () => {
-    setCalendarCurrentDate(prevDate => {
+    setCalendarCurrentDate((prevDate) => {
       const newDate = new Date(prevDate);
       newDate.setMonth(newDate.getMonth() - 1);
       return newDate;
@@ -1128,7 +1260,7 @@ const TaskManager = ({ onBack }) => {
     const start = new Date(weekStart);
     const end = new Date(start);
     end.setDate(start.getDate() + 6);
-    return `${start.toLocaleDateString('en-GB')} - ${end.toLocaleDateString('en-GB')}`;
+    return `${start.toLocaleDateString("en-GB")} - ${end.toLocaleDateString("en-GB")}`;
   };
 
   const uploadImage = async (file) => {
@@ -1150,21 +1282,21 @@ const TaskManager = ({ onBack }) => {
 
       // Create FormData for Cloudinary upload
       const formData = new FormData();
-      formData.append('file', compressedFile);
-      formData.append('upload_preset', 'react_profile_upload');
-      formData.append('cloud_name', 'da0ypp61n');
+      formData.append("file", compressedFile);
+      formData.append("upload_preset", "react_profile_upload");
+      formData.append("cloud_name", "da0ypp61n");
 
       // Upload to Cloudinary
       const response = await fetch(
         `https://api.cloudinary.com/v1_1/da0ypp61n/image/upload`,
         {
-          method: 'POST',
+          method: "POST",
           body: formData,
-        }
+        },
       );
 
       if (!response.ok) {
-        throw new Error('Upload failed');
+        throw new Error("Upload failed");
       }
 
       const data = await response.json();
@@ -1217,14 +1349,22 @@ const TaskManager = ({ onBack }) => {
         let images = [];
         if (imageFile) {
           // Upload image asynchronously
-          uploadImage(imageFile).then(imageUrl => {
-            // Update the task in DB with the image
-            updateDoc(doc(db, "marketing_tasks", taskId), { images: [imageUrl] });
-            // Update in local state
-            setTasks(prev => prev.map(t => t.id === taskId ? { ...t, images: [imageUrl] } : t));
-          }).catch(error => {
-            console.error("Error uploading image:", error);
-          });
+          uploadImage(imageFile)
+            .then((imageUrl) => {
+              // Update the task in DB with the image
+              updateDoc(doc(db, "marketing_tasks", taskId), {
+                images: [imageUrl],
+              });
+              // Update in local state
+              setTasks((prev) =>
+                prev.map((t) =>
+                  t.id === taskId ? { ...t, images: [imageUrl] } : t,
+                ),
+              );
+            })
+            .catch((error) => {
+              console.error("Error uploading image:", error);
+            });
         }
 
         const taskData = {
@@ -1234,7 +1374,7 @@ const TaskManager = ({ onBack }) => {
           account: selectedAccount || null,
           rolePlay: selectedRole || null,
           task: selectedTask || null,
-          status: 'not_started',
+          status: "not_started",
           images,
           userId: user.uid,
           createdAt: serverTimestamp(),
@@ -1243,7 +1383,7 @@ const TaskManager = ({ onBack }) => {
         const docRef = doc(db, "marketing_tasks", taskId);
 
         const newTask = { ...taskData, id: taskId };
-        setTasks(prev => [newTask, ...prev]);
+        setTasks((prev) => [newTask, ...prev]);
 
         await setDoc(docRef, { ...taskData, id: taskId });
       } catch (error) {
@@ -1260,7 +1400,9 @@ const TaskManager = ({ onBack }) => {
 
   const moveTask = async (taskId, newStatus) => {
     // Update local state immediately
-    setTasks(tasks.map(t => t.id === taskId ? { ...t, status: newStatus } : t));
+    setTasks(
+      tasks.map((t) => (t.id === taskId ? { ...t, status: newStatus } : t)),
+    );
     // Update Firestore immediately
     try {
       await moveTaskImmediate(taskId, newStatus);
@@ -1270,10 +1412,10 @@ const TaskManager = ({ onBack }) => {
   };
 
   const getTasksByStatus = (status) => {
-    return filteredTasks.filter(t => t.status === status);
+    return filteredTasks.filter((t) => t.status === status);
   };
 
-  const filteredTasks = tasks.filter(task => {
+  const filteredTasks = tasks.filter((task) => {
     if (filters.user && task.assignedTo !== filters.user) return false;
     if (filters.role && task.role !== filters.role) return false;
     if (filters.startDate && task.startDate) {
@@ -1289,17 +1431,37 @@ const TaskManager = ({ onBack }) => {
 
     // Date filtering based on current view
     let taskDate = null;
-    if (task.dueDate) {
+    if (task.startDate) {
+      taskDate = new Date(task.startDate);
+    } else if (task.dueDate) {
       taskDate = new Date(task.dueDate);
     } else if (task.createdAt) {
-      taskDate = task.createdAt?.toDate ? task.createdAt.toDate() : new Date(task.createdAt);
+      taskDate = task.createdAt?.toDate
+        ? task.createdAt.toDate()
+        : new Date(task.createdAt);
     }
 
-    if (taskDate) {
+    // New Rule: If User Filter is active AND task is active (not started/in progress),
+    // SHOW IT regardless of date (Persistent Backlog)
+    if (
+      filters.user &&
+      (task.status === "not_started" || task.status === "in_progress")
+    ) {
+      // Do nothing here to skip the date check return false below
+      // implicitly "return true" at the end unless other filters failed above
+    } else if (taskDate) {
       if (currentView === "calendar") {
         // For calendar view, filter by current month
-        const monthStart = new Date(calendarCurrentDate.getFullYear(), calendarCurrentDate.getMonth(), 1);
-        const monthEnd = new Date(calendarCurrentDate.getFullYear(), calendarCurrentDate.getMonth() + 1, 0);
+        const monthStart = new Date(
+          calendarCurrentDate.getFullYear(),
+          calendarCurrentDate.getMonth(),
+          1,
+        );
+        const monthEnd = new Date(
+          calendarCurrentDate.getFullYear(),
+          calendarCurrentDate.getMonth() + 1,
+          0,
+        );
         monthEnd.setHours(23, 59, 59, 999);
         if (taskDate < monthStart || taskDate > monthEnd) return false;
       } else {
@@ -1323,7 +1485,7 @@ const TaskManager = ({ onBack }) => {
   const handleSaveTaskDates = async (taskId, taskData) => {
     try {
       await updateDoc(doc(db, "marketing_tasks", taskId), taskData);
-      setTasks(tasks.map(t => t.id === taskId ? { ...t, ...taskData } : t));
+      setTasks(tasks.map((t) => (t.id === taskId ? { ...t, ...taskData } : t)));
     } catch (error) {
       console.error("Error updating task:", error);
     }
@@ -1335,7 +1497,7 @@ const TaskManager = ({ onBack }) => {
 
   const handleDelete = async (id) => {
     // Update local state immediately
-    setTasks(tasks.filter(t => t.id !== id));
+    setTasks(tasks.filter((t) => t.id !== id));
     // Update Firestore immediately
     try {
       await handleDeleteImmediate(id);
@@ -1345,12 +1507,20 @@ const TaskManager = ({ onBack }) => {
   };
 
   const handleImageDelete = async (taskId, imageIndex) => {
-    const task = tasks.find(t => t.id === taskId);
+    const task = tasks.find((t) => t.id === taskId);
     if (!task || !task.images) return;
-    const updatedImages = task.images.filter((_, index) => index !== imageIndex);
+    const updatedImages = task.images.filter(
+      (_, index) => index !== imageIndex,
+    );
     try {
-      await updateDoc(doc(db, "marketing_tasks", taskId), { images: updatedImages });
-      setTasks(tasks.map(t => t.id === taskId ? { ...t, images: updatedImages } : t));
+      await updateDoc(doc(db, "marketing_tasks", taskId), {
+        images: updatedImages,
+      });
+      setTasks(
+        tasks.map((t) =>
+          t.id === taskId ? { ...t, images: updatedImages } : t,
+        ),
+      );
     } catch (error) {
       console.error("Error deleting image:", error);
     }
@@ -1362,39 +1532,91 @@ const TaskManager = ({ onBack }) => {
 
   const getRoleColor = (role) => {
     switch (role) {
-      case 'Video Editor':
-        return 'bg-purple-100 text-purple-800 border border-purple-200';
-      case 'Graphic Designer':
-        return 'bg-orange-100 text-orange-800 border border-orange-200';
-      case 'Manager':
-        return 'bg-blue-100 text-blue-800 border border-blue-200';
-      case 'Developer':
-        return 'bg-teal-100 text-teal-800 border border-teal-200';
-      case 'Content Writer':
-        return 'bg-pink-100 text-pink-800 border border-pink-200';
+      case "Video Editor":
+        return "bg-purple-100 text-purple-800 border border-purple-200";
+      case "Graphic Designer":
+        return "bg-orange-100 text-orange-800 border border-orange-200";
+      case "Manager":
+        return "bg-blue-100 text-blue-800 border border-blue-200";
+      case "Developer":
+        return "bg-teal-100 text-teal-800 border border-teal-200";
+      case "Content Writer":
+        return "bg-pink-100 text-pink-800 border border-pink-200";
       default:
-        return 'bg-gray-100 text-gray-800 border border-gray-200';
+        return "bg-gray-100 text-gray-800 border border-gray-200";
     }
   };
 
   const handleImportTasks = async (importedTasks) => {
     try {
+      // Fetch all users to create a userId -> displayName map
+      const usersRef = collection(db, "users");
+      const usersSnapshot = await getDocs(usersRef);
+      const userMap = {};
+      usersSnapshot.docs.forEach((doc) => {
+        const userData = doc.data();
+        // Map both user ID and potential auth ID if different
+        userMap[doc.id] = userData.displayName || userData.name || userData.email;
+        if (userData.uid) {
+          userMap[userData.uid] = userData.displayName || userData.name || userData.email;
+        }
+      });
+
       const batch = writeBatch(db);
-      for (const task of importedTasks) {
-        const taskId = task.id || await getNextTaskId();
+      const counterRef = doc(db, "counters", "task_counter");
+
+      // Get current counter value
+      const counterSnap = await getDoc(counterRef);
+      let currentCount = counterSnap.exists() ? counterSnap.data().next_id : 1;
+
+      // Generate all task IDs upfront
+      importedTasks.forEach((task, index) => {
+        const taskId = `dmtask${String(currentCount + index).padStart(4, "0")}`;
         const taskRef = doc(db, "marketing_tasks", taskId);
+
+        // Resolve Assigned To
+        let finalAssignedTo = task.assignedTo || "";
+        if (task.userId && userMap[task.userId]) {
+          finalAssignedTo = userMap[task.userId];
+        }
+
+        // Resolve Role (Simple mapping for common mismatches if necessary)
+        let finalRole = task.role || task.rolePlay || "";
+        if (finalRole === "Graphics Design") finalRole = "Graphic Designer";
+
+        // Resolve Dates
+        const finalStartDate = task.startDate || "";
+        // If dueDate is missing, default to startDate so it shows in Calendar (1 day task)
+        const finalDueDate = task.dueDate || task.startDate || "";
+
         batch.set(taskRef, {
-          ...task,
-          startDate: task.startDate ? parseDate(task.startDate) : null,
-          dueDate: task.dueDate ? parseDate(task.dueDate) : null,
           id: taskId,
-          createdAt: task.createdAt || serverTimestamp(),
+          description: task.description || task.title || "",
+          title: task.title || task.description || "",
+          assignedTo: finalAssignedTo,
+          role: finalRole,
+          account: task.account || "",
+          rolePlay: task.rolePlay || "",
+          task: task.task || "",
+          status: task.status || "not_started",
+          images: task.images || [],
+          startDate: finalStartDate,
+          dueDate: finalDueDate,
+          userId: user.uid, // Creator ID (current user)
+          originalUserId: task.userId || "", // Keep the original ID just in case
+          createdAt: serverTimestamp(),
           updatedAt: serverTimestamp(),
         });
-      }
+      });
+
+      // Update counter by incrementing it by total imported tasks
+      batch.update(counterRef, {
+        next_id: currentCount + importedTasks.length,
+      });
+
       await batch.commit();
-      setRefreshTrigger(prev => prev + 1);
-      setToastMessage("Tasks imported successfully!");
+      setRefreshTrigger((prev) => prev + 1);
+      setToastMessage(`${importedTasks.length} tasks imported successfully!`);
       setShowToast(true);
       setTimeout(() => setShowToast(false), 3000);
     } catch (error) {
@@ -1418,8 +1640,13 @@ const TaskManager = ({ onBack }) => {
     const overId = String(over.id);
 
     // If dropping on a column
-    if (overId === 'not_started' || overId === 'in_progress' || overId === 'completed' || overId === 'cancelled') {
-      const task = tasks.find(t => String(t.id) === activeId);
+    if (
+      overId === "not_started" ||
+      overId === "in_progress" ||
+      overId === "completed" ||
+      overId === "cancelled"
+    ) {
+      const task = tasks.find((t) => String(t.id) === activeId);
       if (task && task.status !== overId) {
         await moveTask(activeId, overId);
       }
@@ -1428,7 +1655,7 @@ const TaskManager = ({ onBack }) => {
     setActiveId(null);
   };
 
-  const activeTask = activeId ? tasks.find(t => t.id === activeId) : null;
+  const activeTask = activeId ? tasks.find((t) => t.id === activeId) : null;
 
   return (
     <DndContext
@@ -1445,22 +1672,36 @@ const TaskManager = ({ onBack }) => {
                 <div className="w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center mx-auto mb-3 shadow-md">
                   <div className="animate-spin rounded-full h-6 w-6 border-3 border-white border-t-transparent"></div>
                 </div>
-                <h2 className="text-xl font-bold text-gray-800 mb-1">Loading Tasks</h2>
-                <p className="text-sm text-gray-600">Wait while we fetch your tasks...</p>
+                <h2 className="text-xl font-bold text-gray-800 mb-1">
+                  Loading Tasks
+                </h2>
+                <p className="text-sm text-gray-600">
+                  Wait while we fetch your tasks...
+                </p>
               </div>
               <div className="mb-2">
                 <HeaderSkeleton />
                 <FormSkeleton />
               </div>
-              {currentView === "kanban" ? <KanbanSkeleton /> : currentView === "calendar" ? <CalendarSkeleton /> : <TableSkeleton />}
+              {currentView === "kanban" ? (
+                <KanbanSkeleton />
+              ) : currentView === "calendar" ? (
+                <CalendarSkeleton />
+              ) : (
+                <TableSkeleton />
+              )}
             </>
           ) : (
             <>
               <div className="mb-2">
                 <div className="flex items-center justify-between mb-2">
                   <div>
-                    <h1 className="text-lg font-bold text-gray-900 mb-0.5">Task Management</h1>
-                    <p className="text-gray-600 text-xs">Organize and track your marketing tasks with ease</p>
+                    <h1 className="text-lg font-bold text-gray-900 mb-0.5">
+                      Task Management
+                    </h1>
+                    <p className="text-gray-600 text-xs">
+                      Organize and track your marketing tasks with ease
+                    </p>
                   </div>
                   <div className="flex items-center gap-3">
                     <div className="hidden md:flex items-center space-x-1">
@@ -1502,7 +1743,7 @@ const TaskManager = ({ onBack }) => {
                       </button>
                     </div>
                     <button
-                      onClick={() => setRefreshTrigger(prev => prev + 1)}
+                      onClick={() => setRefreshTrigger((prev) => prev + 1)}
                       className="px-3 py-1.5 bg-green-500 text-white rounded-full hover:bg-green-600 transition-colors text-xs font-medium shadow-sm"
                     >
                       Refresh
@@ -1531,20 +1772,27 @@ const TaskManager = ({ onBack }) => {
                 {/* Filters */}
                 <div className="mb-2 bg-white rounded-xl p-2 shadow-sm border border-gray-200">
                   <div className="flex flex-wrap items-center gap-2">
-                    <span className="text-sm font-medium text-gray-700">Filters:</span>
+                    <span className="text-sm font-medium text-gray-700">
+                      Filters:
+                    </span>
                     <select
                       value={filters.user}
                       onChange={(e) => {
                         const newValue = e.target.value;
-                        setFilters(prev => ({ ...prev, user: newValue }));
+                        setFilters((prev) => ({ ...prev, user: newValue }));
                         // Save preference: 'all' if empty, 'user' if specific user
-                        localStorage.setItem('dmFilterPreference', newValue === '' ? 'all' : 'user');
+                        localStorage.setItem(
+                          "dmFilterPreference",
+                          newValue === "" ? "all" : "user",
+                        );
                       }}
                       className="px-2 py-1 text-xs border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     >
                       <option value="">All Users</option>
-                      {assignees.map(assignee => (
-                        <option key={assignee} value={assignee}>{assignee}</option>
+                      {assignees.map((assignee) => (
+                        <option key={assignee} value={assignee}>
+                          {assignee}
+                        </option>
                       ))}
                     </select>
                     {currentView === "calendar" ? (
@@ -1556,7 +1804,10 @@ const TaskManager = ({ onBack }) => {
                           <FiChevronLeft />
                         </button>
                         <span className="px-2 py-1 text-xs bg-gray-100 border border-gray-300 rounded-lg">
-                          {calendarCurrentDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+                          {calendarCurrentDate.toLocaleDateString("en-US", {
+                            month: "long",
+                            year: "numeric",
+                          })}
                         </span>
                         <button
                           onClick={goToNextMonth}
@@ -1586,7 +1837,12 @@ const TaskManager = ({ onBack }) => {
                     )}
                     <select
                       value={filters.role}
-                      onChange={(e) => setFilters(prev => ({ ...prev, role: e.target.value }))}
+                      onChange={(e) =>
+                        setFilters((prev) => ({
+                          ...prev,
+                          role: e.target.value,
+                        }))
+                      }
                       className="px-2 py-1 text-xs border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     >
                       <option value="">All Roles</option>
@@ -1597,27 +1853,34 @@ const TaskManager = ({ onBack }) => {
                       <option value="Content Writer">Content Writer</option>
                     </select>
                     <button
-                      onClick={() => setFilters({ user: '', startDate: '', endDate: '', role: '' })}
-                      disabled={filters.user === '' && filters.role === ''}
+                      onClick={() =>
+                        setFilters({
+                          user: "",
+                          startDate: "",
+                          endDate: "",
+                          role: "",
+                        })
+                      }
+                      disabled={filters.user === "" && filters.role === ""}
                       className={`px-2 py-1 text-xs rounded-lg transition-colors ${
-                        filters.user === '' && filters.role === ''
-                          ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                          : 'bg-gray-500 text-white hover:bg-gray-600'
+                        filters.user === "" && filters.role === ""
+                          ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+                          : "bg-gray-500 text-white hover:bg-gray-600"
                       }`}
                     >
                       Clear Filters
                     </button>
-                    
+
                     {/* Task Count Display */}
                     <div className="px-2 py-1 text-xs bg-blue-50 text-blue-700 border border-blue-200 rounded-lg font-medium">
                       {filteredTasks.length} tasks
                     </div>
-                    
+
                     <button
                       onClick={() => {
                         if (!buttonDisabled && !noMoreTasks) {
                           setLoadingMore(true);
-                          setCurrentLimit(prev => prev + 100);
+                          setCurrentLimit((prev) => prev + 100);
                           // Set timeout to show "no more tasks" popup after 5 seconds if no tasks loaded
                           loadMoreTimeoutRef.current = setTimeout(() => {
                             if (loadingMore) {
@@ -1630,10 +1893,16 @@ const TaskManager = ({ onBack }) => {
                       }}
                       disabled={buttonDisabled || noMoreTasks}
                       className={`px-2 py-1 text-xs rounded-lg transition-colors ${
-                        (buttonDisabled || noMoreTasks) ? 'bg-gray-400 text-gray-600 cursor-not-allowed' : 'bg-blue-500 text-white hover:bg-blue-600'
+                        buttonDisabled || noMoreTasks
+                          ? "bg-gray-400 text-gray-600 cursor-not-allowed"
+                          : "bg-blue-500 text-white hover:bg-blue-600"
                       }`}
                     >
-                      {noMoreTasks ? 'No More Tasks' : buttonDisabled ? `Load More Tasks :${countdown}` : 'Load More Tasks'}
+                      {noMoreTasks
+                        ? "No More Tasks"
+                        : buttonDisabled
+                          ? `Load More Tasks :${countdown}`
+                          : "Load More Tasks"}
                     </button>
                   </div>
                 </div>
@@ -1643,7 +1912,9 @@ const TaskManager = ({ onBack }) => {
                   <div className="fixed inset-0 bg-transparent backdrop-blur-sm bg-opacity-20 flex items-center justify-center z-50 p-4">
                     <div className="bg-white rounded-2xl shadow-lg p-4 max-w-lg w-full mx-4">
                       <div className="flex justify-between items-center mb-4">
-                        <h2 className="text-lg font-semibold text-gray-900">Create New Task</h2>
+                        <h2 className="text-lg font-semibold text-gray-900">
+                          Create New Task
+                        </h2>
                         <button
                           onClick={() => setShowForm(false)}
                           className="text-gray-500 hover:text-gray-700 text-2xl font-light"
@@ -1651,68 +1922,90 @@ const TaskManager = ({ onBack }) => {
                           ×
                         </button>
                       </div>
-                      <form onSubmit={handleAdd} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
+                      <form
+                        onSubmit={handleAdd}
+                        className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2"
+                      >
                         <div>
                           <select
                             value={role}
-                            onChange={(e)=>setRole(e.target.value)}
+                            onChange={(e) => setRole(e.target.value)}
                             className="w-full px-2 py-1.5 text-xs border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors bg-gray-50"
                           >
                             <option value="">Select role (opt)</option>
                             <option value="Video Editor">Video Editor</option>
-                            <option value="Graphic Designer">Graphic Designer</option>
+                            <option value="Graphic Designer">
+                              Graphic Designer
+                            </option>
                             <option value="Manager">Manager</option>
                             <option value="Developer">Developer</option>
-                            <option value="Content Writer">Content Writer</option>
+                            <option value="Content Writer">
+                              Content Writer
+                            </option>
                           </select>
                         </div>
                         <div>
                           <select
                             value={assignedTo}
-                            onChange={(e)=>setAssignedTo(e.target.value)}
+                            onChange={(e) => setAssignedTo(e.target.value)}
                             className="w-full px-2 py-1.5 text-xs border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors bg-gray-50"
                           >
                             <option value="">Select assignee...</option>
-                            {assignees.map(assignee => (
-                              <option key={assignee} value={assignee}>{assignee}</option>
+                            {assignees.map((assignee) => (
+                              <option key={assignee} value={assignee}>
+                                {assignee}
+                              </option>
                             ))}
                           </select>
                         </div>
                         <div>
                           <select
                             value={selectedAccount}
-                            onChange={(e) => { setSelectedAccount(e.target.value); setSelectedRole(""); setSelectedTask(""); }}
+                            onChange={(e) => {
+                              setSelectedAccount(e.target.value);
+                              setSelectedRole("");
+                              setSelectedTask("");
+                            }}
                             className="w-full px-2 py-1.5 text-xs border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors bg-gray-50"
                           >
                             <option value="">Select account (opt)</option>
-                            {uniqueAccounts.map(acc => (
-                              <option key={acc} value={acc}>{acc}</option>
+                            {uniqueAccounts.map((acc) => (
+                              <option key={acc} value={acc}>
+                                {acc}
+                              </option>
                             ))}
                           </select>
                         </div>
                         <div>
                           <select
                             value={selectedRole}
-                            onChange={(e) => { setSelectedRole(e.target.value); setSelectedTask(""); }}
+                            onChange={(e) => {
+                              setSelectedRole(e.target.value);
+                              setSelectedTask("");
+                            }}
                             className="w-full px-2 py-1.5 text-xs border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors bg-gray-50"
                             disabled={!selectedAccount}
                           >
                             <option value="">Select role play (opt)</option>
-                            {rolesForAccount.map(role => (
-                              <option key={role} value={role}>{role}</option>
+                            {rolesForAccount.map((role) => (
+                              <option key={role} value={role}>
+                                {role}
+                              </option>
                             ))}
                           </select>
                         </div>
                         <div>
                           <select
                             value={selectedTask}
-                            onChange={(e)=>setSelectedTask(e.target.value)}
+                            onChange={(e) => setSelectedTask(e.target.value)}
                             className="w-full px-2 py-1.5 text-xs border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors bg-gray-50"
                             disabled={!selectedRole}
                           >
                             <option value="">Select task (opt)</option>
-                            {tasksForRole.map(task => (
-                              <option key={task} value={task}>{task}</option>
+                            {tasksForRole.map((task) => (
+                              <option key={task} value={task}>
+                                {task}
+                              </option>
                             ))}
                           </select>
                         </div>
@@ -1768,7 +2061,16 @@ const TaskManager = ({ onBack }) => {
                           </button>
                           <button
                             type="button"
-                            onClick={()=>{setTitle(""); setAssignedTo(""); setRole(""); setSelectedAccount(""); setSelectedRole(""); setSelectedTask(""); clearImage(); setShowForm(false);}}
+                            onClick={() => {
+                              setTitle("");
+                              setAssignedTo("");
+                              setRole("");
+                              setSelectedAccount("");
+                              setSelectedRole("");
+                              setSelectedTask("");
+                              clearImage();
+                              setShowForm(false);
+                            }}
                             className="px-3 py-1.5 bg-gray-500 text-white rounded-full hover:bg-gray-600 transition-colors font-medium text-xs shadow-sm"
                           >
                             Reset
@@ -1797,9 +2099,9 @@ const TaskManager = ({ onBack }) => {
                       title="Backlog"
                       color="bg-gray-400"
                       bgColor="bg-gray-50"
-                      tasks={getTasksByStatus('not_started')}
+                      tasks={getTasksByStatus("not_started")}
                     >
-                      {getTasksByStatus('not_started').map(t => (
+                      {getTasksByStatus("not_started").map((t) => (
                         <TaskCard
                           key={t.id}
                           task={t}
@@ -1818,9 +2120,9 @@ const TaskManager = ({ onBack }) => {
                       title="In Progress"
                       color="bg-blue-500"
                       bgColor="bg-blue-50"
-                      tasks={getTasksByStatus('in_progress')}
+                      tasks={getTasksByStatus("in_progress")}
                     >
-                      {getTasksByStatus('in_progress').map(t => (
+                      {getTasksByStatus("in_progress").map((t) => (
                         <TaskCard
                           key={t.id}
                           task={t}
@@ -1839,9 +2141,9 @@ const TaskManager = ({ onBack }) => {
                       title="Done"
                       color="bg-green-500"
                       bgColor="bg-green-50"
-                      tasks={getTasksByStatus('completed')}
+                      tasks={getTasksByStatus("completed")}
                     >
-                      {getTasksByStatus('completed').map(t => (
+                      {getTasksByStatus("completed").map((t) => (
                         <TaskCard
                           key={t.id}
                           task={t}
@@ -1860,9 +2162,9 @@ const TaskManager = ({ onBack }) => {
                       title="On hold"
                       color="bg-red-500"
                       bgColor="bg-red-50"
-                      tasks={getTasksByStatus('cancelled')}
+                      tasks={getTasksByStatus("cancelled")}
                     >
-                      {getTasksByStatus('cancelled').map(t => (
+                      {getTasksByStatus("cancelled").map((t) => (
                         <TaskCard
                           key={t.id}
                           task={t}
@@ -1928,8 +2230,12 @@ const TaskManager = ({ onBack }) => {
               <div className="w-12 h-12 bg-linear-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center mx-auto mb-3 shadow-md">
                 <div className="animate-spin rounded-full h-6 w-6 border-3 border-white border-t-transparent"></div>
               </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-1">Loading Tasks</h3>
-              <p className="text-gray-600 text-xs">Please wait while we fetch more tasks...</p>
+              <h3 className="text-lg font-semibold text-gray-900 mb-1">
+                Loading Tasks
+              </h3>
+              <p className="text-gray-600 text-xs">
+                Please wait while we fetch more tasks...
+              </p>
             </div>
           </div>
         </div>
@@ -1940,12 +2246,26 @@ const TaskManager = ({ onBack }) => {
           <div className="bg-white rounded-xl shadow-xl border border-gray-100 max-w-xs w-full mx-auto">
             <div className="p-6 text-center">
               <div className="w-12 h-12 bg-linear-to-br from-orange-400 to-orange-500 rounded-full flex items-center justify-center mx-auto mb-3 shadow-md">
-                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
+                <svg
+                  className="w-6 h-6 text-white"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M5 13l4 4L19 7"
+                  ></path>
                 </svg>
               </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-1">No More Tasks</h3>
-              <p className="text-gray-600 text-xs">All available tasks have been loaded.</p>
+              <h3 className="text-lg font-semibold text-gray-900 mb-1">
+                No More Tasks
+              </h3>
+              <p className="text-gray-600 text-xs">
+                All available tasks have been loaded.
+              </p>
               <button
                 onClick={() => setShowNoMorePopup(false)}
                 className="mt-4 px-4 py-2 bg-orange-500 text-white text-sm rounded-lg hover:bg-orange-600 transition-colors"
