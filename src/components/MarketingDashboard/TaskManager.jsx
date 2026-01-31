@@ -484,6 +484,27 @@ const Column = ({ id, title, color, bgColor, tasks, children }) => {
   );
 };
 
+const parseDate = (dateStr) => {
+  if (!dateStr) return null;
+  if (dateStr instanceof Date) return dateStr;
+  if (dateStr.toDate) return dateStr.toDate();
+  if (typeof dateStr === 'string') {
+    const parts = dateStr.split('-');
+    if (parts.length === 3) {
+      const [p1, p2, p3] = parts.map(Number);
+      if (p1 > 31) { // YYYY-MM-DD
+        return new Date(p1, p2 - 1, p3);
+      } else if (p3 > 31) { // DD-MM-YYYY
+        return new Date(p3, p2 - 1, p1);
+      }
+    }
+    return new Date(dateStr);
+  }
+  return null;
+};
+
+
+
 const CalendarView = ({
   tasks,
   getRoleDisplay,
@@ -501,15 +522,15 @@ const CalendarView = ({
     return tasks.filter((task) => {
       // If task has start and due dates, check if the date falls within the range
       if (task.startDate && task.dueDate) {
-        const startDate = new Date(task.startDate);
-        const dueDate = new Date(task.dueDate);
+        const startDate = parseDate(task.startDate);
+        const dueDate = parseDate(task.dueDate);
         const checkDate = new Date(date);
-        return checkDate >= startDate && checkDate <= dueDate;
+        return startDate && dueDate && checkDate >= startDate && checkDate <= dueDate;
       }
       // Otherwise, use due date if available, otherwise use creation date
       let taskDate = null;
       if (task.dueDate) {
-        taskDate = new Date(task.dueDate);
+        taskDate = parseDate(task.dueDate);
       } else if (task.createdAt) {
         taskDate = task.createdAt?.toDate
           ? task.createdAt.toDate()
@@ -680,30 +701,14 @@ const TableView = ({
 }) => {
   const getStatusBadge = (status) => {
     switch (status) {
-      case "not_started":
-        return (
-          <span className="px-3 py-1.5 text-xs bg-gray-100 text-gray-700 rounded-full font-semibold shadow-sm whitespace-nowrap">
-            Not Started
-          </span>
-        );
-      case "in_progress":
-        return (
-          <span className="px-3 py-1.5 text-xs bg-blue-100 text-blue-700 rounded-full font-semibold shadow-sm whitespace-nowrap">
-            In Progress
-          </span>
-        );
-      case "completed":
-        return (
-          <span className="px-3 py-1.5 text-xs bg-green-100 text-green-700 rounded-full font-semibold shadow-sm whitespace-nowrap">
-            Completed
-          </span>
-        );
-      case "cancelled":
-        return (
-          <span className="px-3 py-1.5 text-xs bg-red-100 text-red-700 rounded-full font-semibold shadow-sm whitespace-nowrap">
-            Cancelled
-          </span>
-        );
+      case 'not_started':
+        return <span className="px-3 py-1.5 text-xs bg-gray-100 text-gray-700 rounded-full font-semibold shadow-sm whitespace-nowrap">Backlog</span>;
+      case 'in_progress':
+        return <span className="px-3 py-1.5 text-xs bg-blue-100 text-blue-700 rounded-full font-semibold shadow-sm whitespace-nowrap">In Progress</span>;
+      case 'completed':
+        return <span className="px-3 py-1.5 text-xs bg-green-100 text-green-700 rounded-full font-semibold shadow-sm whitespace-nowrap">Done</span>;
+      case 'cancelled':
+        return <span className="px-3 py-1.5 text-xs bg-red-100 text-red-700 rounded-full font-semibold shadow-sm whitespace-nowrap">On hold</span>;
       default:
         return (
           <span className="px-3 py-1.5 text-xs bg-gray-100 text-gray-700 rounded-full font-semibold shadow-sm whitespace-nowrap">
@@ -713,11 +718,14 @@ const TableView = ({
     }
   };
 
+
+
   const formatDate = (dateString) => {
-    if (!dateString) return "—";
-    return new Date(dateString).toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
+    const date = parseDate(dateString);
+    if (!date || isNaN(date.getTime())) return '—';
+    return date.toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric'
     });
   };
 
@@ -2088,7 +2096,7 @@ const TaskManager = ({ onBack }) => {
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                     <Column
                       id="not_started"
-                      title="Not Started"
+                      title="Backlog"
                       color="bg-gray-400"
                       bgColor="bg-gray-50"
                       tasks={getTasksByStatus("not_started")}
@@ -2130,7 +2138,7 @@ const TaskManager = ({ onBack }) => {
 
                     <Column
                       id="completed"
-                      title="Completed"
+                      title="Done"
                       color="bg-green-500"
                       bgColor="bg-green-50"
                       tasks={getTasksByStatus("completed")}
@@ -2151,7 +2159,7 @@ const TaskManager = ({ onBack }) => {
 
                     <Column
                       id="cancelled"
-                      title="Cancelled"
+                      title="On hold"
                       color="bg-red-500"
                       bgColor="bg-red-50"
                       tasks={getTasksByStatus("cancelled")}
@@ -2237,7 +2245,7 @@ const TaskManager = ({ onBack }) => {
         <div className="fixed inset-0 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl shadow-xl border border-gray-100 max-w-xs w-full mx-auto">
             <div className="p-6 text-center">
-              <div className="w-12 h-12 bg-gradient-to-br from-orange-400 to-orange-500 rounded-full flex items-center justify-center mx-auto mb-3 shadow-md">
+              <div className="w-12 h-12 bg-linear-to-br from-orange-400 to-orange-500 rounded-full flex items-center justify-center mx-auto mb-3 shadow-md">
                 <svg
                   className="w-6 h-6 text-white"
                   fill="none"

@@ -28,14 +28,14 @@ function TrainerRow({
   getDownloadStatus,
   formatDate
 }) {
-  console.log('🔍 TrainerRow received item:', {
-    trainerName: item.trainerName,
-    trainerId: item.trainerId,
-    assignedHours: item.assignedHours,
-    totalCollegeHours: item.totalCollegeHours,
-    paymentCycle: item.paymentCycle,
-    allBatches: item.allBatches?.length
-  });
+  // console.log('🔍 TrainerRow received item:', {
+  //   trainerName: item.trainerName,
+  //   trainerId: item.trainerId,
+  //   assignedHours: item.assignedHours,
+  //   totalCollegeHours: item.totalCollegeHours,
+  //   paymentCycle: item.paymentCycle,
+  //   allBatches: item.allBatches?.length
+  // });
   const [invoiceData, setInvoiceData] = useState(null);
 
   // Fetch current invoice data from Firebase
@@ -63,14 +63,14 @@ function TrainerRow({
               where("paymentCycle", "==", item.paymentCycle)
             );
 
-        console.log('🔍 TrainerRow fetching invoice for:', {
-          trainerId: item.trainerId,
-          collegeName: item.collegeName,
-          phase: item.phase,
-          paymentCycle: item.paymentCycle,
-          projectCode: item.projectCode,
-          isMerged: item.isMerged
-        });
+        // console.log('🔍 TrainerRow fetching invoice for:', {
+        //   trainerId: item.trainerId,
+        //   collegeName: item.collegeName,
+        //   phase: item.phase,
+        //   paymentCycle: item.paymentCycle,
+        //   projectCode: item.projectCode,
+        //   isMerged: item.isMerged
+        // });
 
         const querySnapshot = await getDocs(q);
 
@@ -81,23 +81,23 @@ function TrainerRow({
             ...invoiceDoc.data(),
           };
           
-          console.log('✅ TrainerRow found invoice:', {
-            trainer: item.trainerName,
-            cycle: item.paymentCycle,
-            billNumber: fetchedInvoiceData.billNumber,
-            netPayment: fetchedInvoiceData.netPayment,
-            totalAmount: fetchedInvoiceData.totalAmount
-          });
+          // console.log('✅ TrainerRow found invoice:', {
+          //   trainer: item.trainerName,
+          //   cycle: item.paymentCycle,
+          //   billNumber: fetchedInvoiceData.billNumber,
+          //   netPayment: fetchedInvoiceData.netPayment,
+          //   totalAmount: fetchedInvoiceData.totalAmount
+          // });
           
           setInvoiceData(fetchedInvoiceData);
         } else {
-          console.log('❌ TrainerRow no invoice found for:', {
-            trainer: item.trainerName,
-            cycle: item.paymentCycle
-          });
+          // console.log('❌ TrainerRow no invoice found for:', {
+          //   trainer: item.trainerName,
+          //   cycle: item.paymentCycle
+          // });
         }
-      } catch (fetchError) {
-        console.error(`🚨 TrainerRow invoice fetch failed for ${item.trainerName}:`, fetchError);
+      } catch {
+        // console.error(`🚨 TrainerRow invoice fetch failed for ${item.trainerName}:`, fetchError);
       }
     };
 
@@ -226,7 +226,16 @@ function TrainerRow({
         <div className="space-y-1">
           {invoiceData?.netPayment ? (
             <div className="text-sm font-semibold text-green-600">
-              ₹{invoiceData.netPayment.toLocaleString('en-IN')}
+              {(() => {
+                // Recalculate net payment using stored invoice data to ensure accuracy
+                const trainingFees = Math.round((invoiceData.trainingRate || 0) * (invoiceData.totalHours || 0));
+                const gstAmount = invoiceData.gst === "18" ? Math.round(trainingFees * 0.18) : 0;
+                const taxableAmount = trainingFees + gstAmount;
+                const tdsAmount = Math.round((taxableAmount * (parseFloat(invoiceData.tds) || 0)) / 100);
+                const otherExpenses = (parseFloat(invoiceData.conveyance) || 0) + (parseFloat(invoiceData.food) || 0) + (parseFloat(invoiceData.lodging) || 0);
+                const netPayment = Math.round(taxableAmount - tdsAmount + otherExpenses + (parseFloat(invoiceData.adhocAdjustment) || 0));
+                return `₹${netPayment.toLocaleString('en-IN')}`;
+              })()}
             </div>
           ) : (
             <div className="text-sm font-semibold text-green-600">
@@ -287,11 +296,7 @@ function TrainerRow({
                       {/* View button - icon only, minimal width */}
                       <button
                         onClick={() => {
-                          const datesInfo = item.activeDates 
-                            ? `Dates: ${item.activeDates.length} days (${item.earliestStartDate || 'N/A'} to ${item.latestEndDate || 'N/A'})`
-                            : `Date range: ${item.earliestStartDate || 'N/A'} to ${item.latestEndDate || 'N/A'}`;
-                          
-                          console.log('👁️ VIEW BUTTON clicked for trainer:', item.trainerName, 'ID:', item.trainerId, 'Cycle:', item.paymentCycle, '|', datesInfo);
+                          // console.log('👁️ VIEW BUTTON clicked for trainer:', item.trainerName, 'ID:', item.trainerId, 'Cycle:', item.paymentCycle, '|', datesInfo);
                           handleViewInvoice(item);
                         }}
                         className="inline-flex items-center justify-center w-6 h-6 text-xs font-medium text-gray-700 bg-white border border-gray-300 rounded hover:bg-gray-50 transition-all shrink-0"
@@ -310,7 +315,7 @@ function TrainerRow({
                       {/* Download button */}
                       <button
                         onClick={() => {
-                          console.log('📥 DOWNLOAD BUTTON clicked for trainer:', item.trainerName, 'ID:', item.trainerId, 'Cycle:', item.paymentCycle);
+                          // console.log('📥 DOWNLOAD BUTTON clicked for trainer:', item.trainerName, 'ID:', item.trainerId, 'Cycle:', item.paymentCycle);
                           handleDownloadInvoice(item);
                         }}
                         disabled={
@@ -327,7 +332,7 @@ function TrainerRow({
                       {invoiceData && invoiceData.status === "generated" && (
                         <button
                           onClick={() => {
-                            console.log('✅ APPROVE BUTTON clicked for trainer:', item.trainerName, 'ID:', item.trainerId, 'Cycle:', item.paymentCycle);
+                            // console.log('✅ APPROVE BUTTON clicked for trainer:', item.trainerName, 'ID:', item.trainerId, 'Cycle:', item.paymentCycle);
                             handleApproveInvoice(item);
                           }}
                           className="flex-1 inline-flex items-center justify-center px-2 py-1 text-xs font-medium text-white bg-blue-600 rounded hover:bg-blue-700 transition-all"
@@ -341,7 +346,7 @@ function TrainerRow({
                       {invoiceData && (invoiceData.status === "generated" || invoiceData.status === "approved" || invoiceData.status === "pending") && (
                         <button
                           onClick={() => {
-                            console.log('🗑️ DELETE BUTTON clicked for trainer:', item.trainerName, 'ID:', item.trainerId, 'Cycle:', item.paymentCycle);
+                            // console.log('🗑️ DELETE BUTTON clicked for trainer:', item.trainerName, 'ID:', item.trainerId, 'Cycle:', item.paymentCycle);
                             handleDeleteInvoice(item);
                           }}
                           className="inline-flex items-center justify-center w-6 h-6 text-xs font-medium text-red-700 bg-white border border-red-300 rounded hover:bg-red-50 transition-all shrink-0"
@@ -355,7 +360,7 @@ function TrainerRow({
                       {invoiceData && invoiceData.status === "rejected" && (
                         <button
                           onClick={() => {
-                            console.log('🔄 RESUBMIT BUTTON clicked for trainer:', item.trainerName, 'ID:', item.trainerId, 'Cycle:', item.paymentCycle);
+                            // console.log('🔄 RESUBMIT BUTTON clicked for trainer:', item.trainerName, 'ID:', item.trainerId, 'Cycle:', item.paymentCycle);
                             handleEditInvoice(item);
                           }}
                           className="flex-1 inline-flex items-center justify-center px-2 py-1 text-xs font-semibold text-white bg-linear-to-r from-amber-500 to-orange-500 rounded hover:from-amber-600 hover:to-orange-600 transition-all duration-200 shadow-sm hover:shadow-md border border-amber-400 hover:border-amber-500"
@@ -390,11 +395,7 @@ function TrainerRow({
               <div className="flex justify-center">
                 <button
                   onClick={() => {
-                    const datesInfo = item.activeDates 
-                      ? `Dates: ${item.activeDates.length} days (${item.earliestStartDate || 'N/A'} to ${item.latestEndDate || 'N/A'})`
-                      : `Date range: ${item.earliestStartDate || 'N/A'} to ${item.latestEndDate || 'N/A'}`;
-                    
-                    console.log('📄 GENERATE INVOICE BUTTON clicked for trainer:', item.trainerName, 'ID:', item.trainerId, 'Cycle:', item.paymentCycle, '|', datesInfo);
+                    // console.log('📄 GENERATE INVOICE BUTTON clicked for trainer:', item.trainerName, 'ID:', item.trainerId, 'Cycle:', item.paymentCycle, '|', datesInfo);
                     handleGenerateInvoice(item);
                   }}
                   className="w-full inline-flex items-center justify-center px-2 py-1.5 text-xs font-semibold text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-all shadow-sm hover:shadow-md border border-blue-600"
