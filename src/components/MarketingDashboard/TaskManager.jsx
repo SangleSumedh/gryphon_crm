@@ -17,7 +17,6 @@ import { useAuth } from "../../context/AuthContext";
 import tasksData from "./task.js";
 import {
   doc,
-  getDoc,
   serverTimestamp,
   onSnapshot,
   collection,
@@ -29,10 +28,8 @@ import {
   orderBy,
   limit,
   getDocs,
-  writeBatch,
 } from "firebase/firestore";
 import EditTaskModal from "./EditTaskModal";
-import ImportTasksModal from "./ImportTasksModal";
 
 const SkeletonLoader = ({ className }) => (
   <div className={`animate-pulse bg-gray-200 rounded ${className}`}></div>
@@ -899,6 +896,7 @@ const TaskManager = ({ onBack }) => {
   const [editingTask, setEditingTask] = useState(null);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showForm, setShowForm] = useState(false);
+  const [formError, setFormError] = useState("");
   const [assignees, setAssignees] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
@@ -924,7 +922,6 @@ const TaskManager = ({ onBack }) => {
   const [noMoreCount, setNoMoreCount] = useState(0);
   const [noMoreTasks, setNoMoreTasks] = useState(false);
   const [showNoMorePopup, setShowNoMorePopup] = useState(false);
-  const [showImportModal, setShowImportModal] = useState(false);
   const [currentWeek, setCurrentWeek] = useState(() => {
     const now = new Date();
     const day = now.getDay();
@@ -1103,8 +1100,8 @@ const TaskManager = ({ onBack }) => {
             setTimeout(() => setShowToast(false), 3000);
             setNoMoreTasks(false);
             setNoMoreCount(0);
-          } else if (tasksData.length >= currentLimit) {
-            // If we reached the limit but no new tasks, it means no more tasks available
+          } else {
+            // If no new tasks were loaded, it means no more tasks available
             // Clear the timeout since we determined no more tasks
             if (loadMoreTimeoutRef.current) {
               clearTimeout(loadMoreTimeoutRef.current);
@@ -1329,7 +1326,15 @@ const TaskManager = ({ onBack }) => {
 
   const handleAdd = async (e) => {
     e.preventDefault();
-    if (!title.trim()) return;
+    if (!title.trim()) {
+      setFormError("Please enter a task description.");
+      return;
+    }
+    if (!assignedTo.trim()) {
+      setFormError("Please select an assignee.");
+      return;
+    }
+    setFormError(""); // Clear any previous error
 
     // Close modal and clear form immediately
     setShowForm(false);
@@ -1547,86 +1552,6 @@ const TaskManager = ({ onBack }) => {
     }
   };
 
-  const handleImportTasks = async (importedTasks) => {
-    try {
-      // Fetch all users to create a userId -> displayName map
-      const usersRef = collection(db, "users");
-      const usersSnapshot = await getDocs(usersRef);
-      const userMap = {};
-      usersSnapshot.docs.forEach((doc) => {
-        const userData = doc.data();
-        // Map both user ID and potential auth ID if different
-        userMap[doc.id] = userData.displayName || userData.name || userData.email;
-        if (userData.uid) {
-          userMap[userData.uid] = userData.displayName || userData.name || userData.email;
-        }
-      });
-
-      const batch = writeBatch(db);
-      const counterRef = doc(db, "counters", "task_counter");
-
-      // Get current counter value
-      const counterSnap = await getDoc(counterRef);
-      let currentCount = counterSnap.exists() ? counterSnap.data().next_id : 1;
-
-      // Generate all task IDs upfront
-      importedTasks.forEach((task, index) => {
-        const taskId = `dmtask${String(currentCount + index).padStart(4, "0")}`;
-        const taskRef = doc(db, "marketing_tasks", taskId);
-
-        // Resolve Assigned To
-        let finalAssignedTo = task.assignedTo || "";
-        if (task.userId && userMap[task.userId]) {
-          finalAssignedTo = userMap[task.userId];
-        }
-
-        // Resolve Role (Simple mapping for common mismatches if necessary)
-        let finalRole = task.role || task.rolePlay || "";
-        if (finalRole === "Graphics Design") finalRole = "Graphic Designer";
-
-        // Resolve Dates
-        const finalStartDate = task.startDate || "";
-        // If dueDate is missing, default to startDate so it shows in Calendar (1 day task)
-        const finalDueDate = task.dueDate || task.startDate || "";
-
-        batch.set(taskRef, {
-          id: taskId,
-          description: task.description || task.title || "",
-          title: task.title || task.description || "",
-          assignedTo: finalAssignedTo,
-          role: finalRole,
-          account: task.account || "",
-          rolePlay: task.rolePlay || "",
-          task: task.task || "",
-          status: task.status || "not_started",
-          images: task.images || [],
-          startDate: finalStartDate,
-          dueDate: finalDueDate,
-          userId: user.uid, // Creator ID (current user)
-          originalUserId: task.userId || "", // Keep the original ID just in case
-          createdAt: serverTimestamp(),
-          updatedAt: serverTimestamp(),
-        });
-      });
-
-      // Update counter by incrementing it by total imported tasks
-      batch.update(counterRef, {
-        next_id: currentCount + importedTasks.length,
-      });
-
-      await batch.commit();
-      setRefreshTrigger((prev) => prev + 1);
-      setToastMessage(`${importedTasks.length} tasks imported successfully!`);
-      setShowToast(true);
-      setTimeout(() => setShowToast(false), 3000);
-    } catch (error) {
-      console.error("Error importing tasks:", error);
-      setToastMessage("Failed to import tasks.");
-      setShowToast(true);
-      setTimeout(() => setShowToast(false), 3000);
-    }
-  };
-
   const handleDragStart = (event) => {
     setActiveId(event.active.id);
   };
@@ -1749,16 +1674,13 @@ const TaskManager = ({ onBack }) => {
                       Refresh
                     </button>
                     <button
-                      onClick={() => setShowForm(true)}
+                      onClick={() => {
+                        setShowForm(true);
+                        setFormError("");
+                      }}
                       className="px-3 py-1.5 bg-blue-500 text-white rounded-full hover:bg-blue-600 transition-colors text-xs font-medium shadow-sm"
                     >
                       New Task
-                    </button>
-                    <button
-                      onClick={() => setShowImportModal(true)}
-                      className="px-3 py-1.5 bg-purple-500 text-white rounded-full hover:bg-purple-600 transition-colors text-xs font-medium shadow-sm"
-                    >
-                      Import Tasks
                     </button>
                     <button
                       onClick={onBack}
@@ -1922,6 +1844,11 @@ const TaskManager = ({ onBack }) => {
                           ×
                         </button>
                       </div>
+                      {formError && (
+                        <div className="mb-4 p-2 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+                          {formError}
+                        </div>
+                      )}
                       <form
                         onSubmit={handleAdd}
                         className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2"
@@ -1950,7 +1877,7 @@ const TaskManager = ({ onBack }) => {
                             onChange={(e) => setAssignedTo(e.target.value)}
                             className="w-full px-2 py-1.5 text-xs border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors bg-gray-50"
                           >
-                            <option value="">Select assignee...</option>
+                            <option value="">Select assignee*</option>
                             {assignees.map((assignee) => (
                               <option key={assignee} value={assignee}>
                                 {assignee}
@@ -2294,12 +2221,7 @@ const TaskManager = ({ onBack }) => {
         }}
         onSave={handleSaveTaskDates}
         assignees={assignees}
-      />
-
-      <ImportTasksModal
-        isOpen={showImportModal}
-        onClose={() => setShowImportModal(false)}
-        onImport={handleImportTasks}
+        tasksData={tasksData}
       />
     </DndContext>
   );

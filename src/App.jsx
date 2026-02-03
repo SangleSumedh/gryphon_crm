@@ -153,7 +153,7 @@ const App = () => (
     <ErrorBoundary>
       <AuthProvider>
         <NotificationsProvider>
-          <Router basename="">
+          <Router basename="/">
             <AppContent />
           </Router>
         </NotificationsProvider>
