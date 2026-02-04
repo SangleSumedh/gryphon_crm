@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useAuth } from "../../context/AuthContext";
 import ImageCompressor from 'image-compressor.js';
 
 const EditTaskModal = ({ task, isOpen, onClose, onSave, assignees }) => {
@@ -12,6 +13,9 @@ const EditTaskModal = ({ task, isOpen, onClose, onSave, assignees }) => {
   const [newImagePreviews, setNewImagePreviews] = useState([]);
   const [uploadingImage, setUploadingImage] = useState(false);
   const fileInputRef = useRef(null);
+  const { user } = useAuth();
+
+  const canEditDueDate = ["Director"].includes(user?.role);
 
   const parseDate = (dateStr) => {
     if (!dateStr) return null;
@@ -231,7 +235,9 @@ const EditTaskModal = ({ task, isOpen, onClose, onSave, assignees }) => {
                 value={dueDate}
                 onChange={(e) => setDueDate(e.target.value)}
                 placeholder="dd-mm-yyyy"
-                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
+                className={`w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white ${!canEditDueDate ? 'bg-gray-100 cursor-not-allowed text-gray-500' : ''}`}
+                disabled={!canEditDueDate}
+                title={!canEditDueDate ? "Only Managers and Admins can update due date" : ""}
               />
             </div>
           </div>
