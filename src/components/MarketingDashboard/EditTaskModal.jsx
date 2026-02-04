@@ -1,13 +1,16 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useAuth } from "../../context/AuthContext";
 import ImageCompressor from 'image-compressor.js';
 
-const EditTaskModal = ({ task, isOpen, onClose, onSave, assignees }) => {
+const EditTaskModal = ({ task, isOpen, onClose, onSave, assignees, tasksData }) => {
   const [title, setTitle] = useState('');
   const [startDate, setStartDate] = useState('');
   const [dueDate, setDueDate] = useState('');
   const [assignedTo, setAssignedTo] = useState('');
   const [role, setRole] = useState('');
+  const [selectedAccount, setSelectedAccount] = useState('');
+  const [selectedRole, setSelectedRole] = useState('');
+  const [selectedTask, setSelectedTask] = useState('');
   const [images, setImages] = useState([]);
   const [newImageFiles, setNewImageFiles] = useState([]);
   const [newImagePreviews, setNewImagePreviews] = useState([]);
@@ -16,6 +19,16 @@ const EditTaskModal = ({ task, isOpen, onClose, onSave, assignees }) => {
   const { user } = useAuth();
 
   const canEditDueDate = ["Director"].includes(user?.role);
+
+  const uniqueAccounts = useMemo(() => [...new Set(tasksData?.map((item) => item.account) || [])], [tasksData]);
+  const rolesForAccount = useMemo(() => {
+    if (!selectedAccount) return [];
+    return [...new Set(tasksData?.filter((item) => item.account === selectedAccount).map((item) => item.role) || [])];
+  }, [selectedAccount, tasksData]);
+  const tasksForRole = useMemo(() => {
+    if (!selectedAccount || !selectedRole) return [];
+    return [...new Set(tasksData?.filter((item) => item.account === selectedAccount && item.role === selectedRole).map((item) => item.task) || [])];
+  }, [selectedAccount, selectedRole, tasksData]);
 
   const parseDate = (dateStr) => {
     if (!dateStr) return null;
@@ -49,6 +62,9 @@ const EditTaskModal = ({ task, isOpen, onClose, onSave, assignees }) => {
       setDueDate(formatDateForInput(task.dueDate));
       setAssignedTo(task.assignedTo || '');
       setRole(task.role || '');
+      setSelectedAccount(task.account || '');
+      setSelectedRole(task.rolePlay || '');
+      setSelectedTask(task.task || '');
       setImages(task.images || []);
     }
   }, [task]);
@@ -176,6 +192,9 @@ const EditTaskModal = ({ task, isOpen, onClose, onSave, assignees }) => {
         dueDate: dueDate ? parseDate(dueDate) : null,
         assignedTo: assignedTo || null,
         role: role || null,
+        account: selectedAccount || null,
+        rolePlay: selectedRole || null,
+        task: selectedTask || null,
         images: images,
       };
       onSave(task.id, taskData);
@@ -187,7 +206,7 @@ const EditTaskModal = ({ task, isOpen, onClose, onSave, assignees }) => {
 
   return (
     <div className="fixed inset-0 bg-transparent backdrop-blur-sm bg-opacity-50 flex items-center justify-center z-54 p-4">
-      <div className="bg-white rounded-2xl shadow-xl p-4 max-w-md w-full mx-4 max-h-[90vh] flex flex-col border border-gray-200">
+      <div className="bg-white rounded-2xl shadow-xl p-4 max-w-2xl w-full mx-4 max-h-[90vh] flex flex-col border border-gray-200">
         <div className="flex justify-center items-center mb-2 shrink-0 relative">
           <h2 className="text-base font-semibold text-gray-900">Edit Task</h2>
           <button
@@ -242,38 +261,97 @@ const EditTaskModal = ({ task, isOpen, onClose, onSave, assignees }) => {
             </div>
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Assigned To
-            </label>
-            <select
-              value={assignedTo}
-              onChange={(e) => setAssignedTo(e.target.value)}
-              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
-            >
-              <option value="">Select assignee...</option>
-              {assignees.map(assignee => (
-                <option key={assignee} value={assignee}>{assignee}</option>
-              ))}
-            </select>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Assigned To
+              </label>
+              <select
+                value={assignedTo}
+                onChange={(e) => setAssignedTo(e.target.value)}
+                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
+              >
+                <option value="">Select assignee...</option>
+                {assignees.map(assignee => (
+                  <option key={assignee} value={assignee}>{assignee}</option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Role
+              </label>
+              <select
+                value={role}
+                onChange={(e) => setRole(e.target.value)}
+                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
+              >
+                <option value="">Select role (optional)</option>
+                <option value="Video Editor">Video Editor</option>
+                <option value="Graphic Designer">Graphic Designer</option>
+                <option value="Manager">Manager</option>
+                <option value="Developer">Developer</option>
+                <option value="Content Writer">Content Writer</option>
+              </select>
+            </div>
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Role
-            </label>
-            <select
-              value={role}
-              onChange={(e) => setRole(e.target.value)}
-              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
-            >
-              <option value="">Select role (optional)</option>
-              <option value="Video Editor">Video Editor</option>
-              <option value="Graphic Designer">Graphic Designer</option>
-              <option value="Manager">Manager</option>
-              <option value="Developer">Developer</option>
-              <option value="Content Writer">Content Writer</option>
-            </select>
+          <div className="grid grid-cols-3 gap-3">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Account
+              </label>
+              <select
+                value={selectedAccount}
+                onChange={(e) => {
+                  setSelectedAccount(e.target.value);
+                  setSelectedRole('');
+                  setSelectedTask('');
+                }}
+                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
+              >
+                <option value="">Select account (opt)</option>
+                {uniqueAccounts.map((acc) => (
+                  <option key={acc} value={acc}>{acc}</option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Role Play
+              </label>
+              <select
+                value={selectedRole}
+                onChange={(e) => {
+                  setSelectedRole(e.target.value);
+                  setSelectedTask('');
+                }}
+                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
+              >
+                <option value="">Select role play (opt)</option>
+                {rolesForAccount.map((role) => (
+                  <option key={role} value={role}>{role}</option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Task
+              </label>
+              <select
+                value={selectedTask}
+                onChange={(e) => setSelectedTask(e.target.value)}
+                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
+              >
+                <option value="">Select task (opt)</option>
+                {tasksForRole.map((task) => (
+                  <option key={task} value={task}>{task}</option>
+                ))}
+              </select>
+            </div>
           </div>
 
           {/* Images Section */}
